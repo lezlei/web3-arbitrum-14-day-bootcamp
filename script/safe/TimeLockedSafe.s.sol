@@ -12,4 +12,4 @@ contract SafeScript is Script {
         vm.stopBroadcast();
         return safe;
     }
-} 
+}
