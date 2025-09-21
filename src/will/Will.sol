@@ -7,11 +7,15 @@ contract SmartWill {
 
     mapping(address => Will) wills;
 
+    struct BeneficiaryInfo {
+        address benaddress;
+        uint256 amt;
+    }
+
     struct Will {
         uint256 lastPing; // The timestamp of the last "I'm alive" signal
         uint256 timeout; // Length of time after lastPing for beneficiaries to be able to claim
         uint256 usableFunds; // Deposited funds that have not been designated
-        uint256 designatedFunds; // Funds that have been designated to beneficiaries
         mapping(address => uint256) beneficiaries; // Mapping of beneficiary addresses to their inheritance amount
         address[] beneficiaryList; // List of beneficiaries
     }
@@ -40,6 +44,45 @@ contract SmartWill {
         Will storage userWill = wills[msg.sender];
         userWill.lastPing = block.timestamp;
         userWill.timeout = TIMEOUT;
+    }
+
+    // Allows beneficiaries to claim inheritance
+    function claimInheritance(address _owner) public {
+        if (wills[_owner].lastPing == 0) {
+            revert WillNotFound(_owner);
+        }
+        if (wills[_owner].beneficiaries[msg.sender] == 0) {
+            revert NothingToClaim();
+        }
+        if (block.timestamp < wills[_owner].lastPing + TIMEOUT) {
+            revert TimeoutNotExpired(wills[_owner].lastPing + TIMEOUT);
+        }
+        (bool success,) = msg.sender.call{value: wills[_owner].beneficiaries[msg.sender]}("");
+        require(success, "ETH transfer failed");
+        wills[_owner].beneficiaries[msg.sender] = 0;
+    }
+
+    // Updates lastPing time to current time
+    function ping() public {
+        if (wills[msg.sender].lastPing == 0) {
+            revert WillNotFound(msg.sender);
+        }
+        wills[msg.sender].lastPing = block.timestamp;
+    }
+
+    // Returns all the info of the user's will
+    function getWillDetails() view public returns (uint256 usable, BeneficiaryInfo[] memory beneficiaries) {
+        if (wills[msg.sender].lastPing == 0) {
+            revert WillNotFound(msg.sender);
+        }
+        usable = wills[msg.sender].usableFunds;
+
+        beneficiaries = new BeneficiaryInfo[](wills[msg.sender].beneficiaryList.length);
+        for (uint i = 0; i < wills[msg.sender].beneficiaryList.length; i++) {
+        address beneficiaryAddress = wills[msg.sender].beneficiaryList[i];
+        uint256 beneficiaryAmount = wills[msg.sender].beneficiaries[beneficiaryAddress];
+        beneficiaries[i] = BeneficiaryInfo(beneficiaryAddress, beneficiaryAmount);
+    }
     }
 
     // Deposits funds into user's usable_Funds
