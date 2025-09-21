@@ -71,18 +71,18 @@ contract SmartWill {
     }
 
     // Returns all the info of the user's will
-    function getWillDetails() view public returns (uint256 usable, BeneficiaryInfo[] memory beneficiaries) {
+    function getWillDetails() public view returns (uint256 usable, BeneficiaryInfo[] memory beneficiaries) {
         if (wills[msg.sender].lastPing == 0) {
             revert WillNotFound(msg.sender);
         }
         usable = wills[msg.sender].usableFunds;
 
         beneficiaries = new BeneficiaryInfo[](wills[msg.sender].beneficiaryList.length);
-        for (uint i = 0; i < wills[msg.sender].beneficiaryList.length; i++) {
-        address beneficiaryAddress = wills[msg.sender].beneficiaryList[i];
-        uint256 beneficiaryAmount = wills[msg.sender].beneficiaries[beneficiaryAddress];
-        beneficiaries[i] = BeneficiaryInfo(beneficiaryAddress, beneficiaryAmount);
-    }
+        for (uint256 i = 0; i < wills[msg.sender].beneficiaryList.length; i++) {
+            address beneficiaryAddress = wills[msg.sender].beneficiaryList[i];
+            uint256 beneficiaryAmount = wills[msg.sender].beneficiaries[beneficiaryAddress];
+            beneficiaries[i] = BeneficiaryInfo(beneficiaryAddress, beneficiaryAmount);
+        }
     }
 
     // Deposits funds into user's usable_Funds
