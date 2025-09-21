@@ -23,6 +23,7 @@ contract TimeLockedSafe {
     function deposit(uint256 _duration) external payable {
         require(msg.value > 0);
         require(safes[msg.sender].amount == 0, "safe already active");
+        require(_duration > 0);
         safes[msg.sender] = Safe({amount: msg.value, unlockTime: block.timestamp + _duration});
         emit Deposit(msg.sender, msg.value);
     }

@@ -45,4 +45,42 @@ contract SafeTest is Test {
         (uint256 amtleft,) = safe.safes(address(1));
         assertEq(amtleft, 0, "withdrawal failed 3");
     }
+
+    function test_RevertIfNonOwnerCannotWithdraw() public {
+        hoax(address(1), 100);
+        safe.deposit{value: 100}(10);
+        vm.prank(address(2));
+        vm.expectRevert(bytes("no active safe"));
+        safe.withdraw();
+    }
+
+    function test_OwnerCannotWithdrawBeforeTime() public {
+        hoax(address(1), 100);
+        uint256 time = block.timestamp;
+        safe.deposit{value: 100}(15);
+        vm.warp(time + 10);
+        vm.prank(address(1));
+        vm.expectRevert(bytes("safe is still locked"));
+        safe.withdraw();
+    }
+
+    function test_OwnerCannotDepositWhileSafeIsActive() public {
+        hoax(address(1), 200);
+        safe.deposit{value: 100}(15);
+        vm.expectRevert(bytes("safe already active"));
+        vm.prank(address(1));
+        safe.deposit{value: 100}(10);
+    }
+
+    function test_RevertIfUserDeposits0() public {
+        hoax(address(1), 200);
+        vm.expectRevert();
+        safe.deposit{value: 0}(15);
+    }
+
+    function test_RevertIfSetsTimeAs0() public {
+        hoax(address(1), 200);
+        vm.expectRevert();
+        safe.deposit{value: 100}(0);
+    }
 }
