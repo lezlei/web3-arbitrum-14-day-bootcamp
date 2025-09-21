@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
-import {TimeLockedSafe} from "../src/TimeLockedSafe.sol";
+import {TimeLockedSafe} from "../../src/safe/TimeLockedSafe.sol";
 
 contract SafeTest is Test {
     TimeLockedSafe public safe;
