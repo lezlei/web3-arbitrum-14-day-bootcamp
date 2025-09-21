@@ -10,8 +10,8 @@ contract SmartWill {
     struct Will {
         uint256 lastPing; // The timestamp of the last "I'm alive" signal
         uint256 timeout; // Length of time after lastPing for beneficiaries to be able to claim
-        uint256 usable_Funds; // Deposited funds that have not been designated
-        uint256 designated_Funds; // Funds that have been designated to beneficiaries
+        uint256 usableFunds; // Deposited funds that have not been designated
+        uint256 designatedFunds; // Funds that have been designated to beneficiaries
         mapping(address => uint256) beneficiaries; // Mapping of beneficiary addresses to their inheritance amount
         address[] beneficiaryList; // List of beneficiaries
     }
@@ -51,7 +51,7 @@ contract SmartWill {
             revert WillNotFound(msg.sender);
         }
 
-        wills[msg.sender].usable_Funds += msg.value;
+        wills[msg.sender].usableFunds += msg.value;
         wills[msg.sender].lastPing = block.timestamp;
     }
 
@@ -63,13 +63,13 @@ contract SmartWill {
         if (wills[msg.sender].lastPing == 0) {
             revert WillNotFound(msg.sender);
         }
-        if (_amount > wills[msg.sender].usable_Funds) {
-            revert InsufficientFunds(_amount, wills[msg.sender].usable_Funds);
+        if (_amount > wills[msg.sender].usableFunds) {
+            revert InsufficientFunds(_amount, wills[msg.sender].usableFunds);
         }
 
-        (bool success, ) = msg.sender.call{value: _amount}("");
+        (bool success,) = msg.sender.call{value: _amount}("");
         require(success, "ETH transfer failed");
-        wills[msg.sender].usable_Funds -= _amount;
+        wills[msg.sender].usableFunds -= _amount;
         wills[msg.sender].lastPing = block.timestamp;
     }
 
@@ -81,15 +81,15 @@ contract SmartWill {
         if (wills[msg.sender].beneficiaries[_beneficiary] > 0) {
             revert BeneficiaryExists(_beneficiary);
         }
-        if (_amount > wills[msg.sender].usable_Funds) {
-            revert InsufficientFunds(_amount, wills[msg.sender].usable_Funds);
+        if (_amount > wills[msg.sender].usableFunds) {
+            revert InsufficientFunds(_amount, wills[msg.sender].usableFunds);
         }
         if (_amount < 0) {
             revert UnviableAmount();
         }
 
         wills[msg.sender].beneficiaries[_beneficiary] = _amount;
-        wills[msg.sender].usable_Funds -= _amount;
+        wills[msg.sender].usableFunds -= _amount;
         wills[msg.sender].beneficiaryList.push(_beneficiary);
         wills[msg.sender].lastPing = block.timestamp;
     }
@@ -99,8 +99,8 @@ contract SmartWill {
         if (wills[msg.sender].lastPing == 0) {
             revert WillNotFound(msg.sender);
         }
-        if (_amount - wills[msg.sender].beneficiaries[_beneficiary] > wills[msg.sender].usable_Funds) {
-            revert InsufficientFunds(_amount, wills[msg.sender].usable_Funds);
+        if (_amount - wills[msg.sender].beneficiaries[_beneficiary] > wills[msg.sender].usableFunds) {
+            revert InsufficientFunds(_amount, wills[msg.sender].usableFunds);
         }
         if (_amount <= 0) {
             revert DeleteBeneficiaryInstead();
@@ -108,10 +108,10 @@ contract SmartWill {
 
         // Update usable funds
         if (_amount > wills[msg.sender].beneficiaries[_beneficiary]) {
-            wills[msg.sender].usable_Funds -= (_amount - wills[msg.sender].beneficiaries[_beneficiary]);
+            wills[msg.sender].usableFunds -= (_amount - wills[msg.sender].beneficiaries[_beneficiary]);
         }
         if (_amount < wills[msg.sender].beneficiaries[_beneficiary]) {
-            wills[msg.sender].usable_Funds += (wills[msg.sender].beneficiaries[_beneficiary] - _amount);
+            wills[msg.sender].usableFunds += (wills[msg.sender].beneficiaries[_beneficiary] - _amount);
         }
         // Update inheritance
         wills[msg.sender].beneficiaries[_beneficiary] = _amount;
@@ -127,7 +127,7 @@ contract SmartWill {
             revert BeneficiaryNotFound(_beneficiary);
         }
 
-        wills[msg.sender].usable_Funds += wills[msg.sender].beneficiaries[_beneficiary];
+        wills[msg.sender].usableFunds += wills[msg.sender].beneficiaries[_beneficiary];
         wills[msg.sender].beneficiaries[_beneficiary] = 0;
         for (uint256 i = 0; i < wills[msg.sender].beneficiaryList.length; i++) {
             if (wills[msg.sender].beneficiaryList[i] == _beneficiary) {
