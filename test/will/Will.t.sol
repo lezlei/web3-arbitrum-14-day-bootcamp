@@ -47,6 +47,7 @@ contract WillTest is Test {
 
     function test_CanWithdraw() public {
         uint256 amount = 100;
+        uint256 depo = 200;
         vm.prank(owner);
         will.createWill(5);
         vm.prank(owner);
@@ -59,8 +60,8 @@ contract WillTest is Test {
         vm.prank(owner);
         (uint256 lastPing,, uint256 usableFunds) = will.getWillSimpleDetails();
         assertEq(lastPing, block.timestamp, "ping failed");
-        assertEq(usableFunds, 100, "withdrawal failed");
-        assertEq(owner.balance, 900, "withdrawal failed 2");
+        assertEq(usableFunds, depo - amount, "withdrawal failed");
+        assertEq(owner.balance, 1000 - depo + amount, "withdrawal failed 2");
     }
 
     function test_CanPing() public {
@@ -187,5 +188,92 @@ contract WillTest is Test {
         // 7. Check that the beneficiary's amount in the will is now zero to prevent re-claiming.
         uint256 beneficiaryAmountAfter = will.getBeneficiaryAmount(beneficiaryOne);
         assertEq(beneficiaryAmountAfter, 0, "Beneficiary amount should be zero after claim");
+    }
+
+    // Unhappy path Tests
+
+    function test_RevertIfUserCreatesWillWhenOneExists() public {
+        vm.startPrank(owner);
+        will.createWill(5);
+        vm.expectRevert(abi.encodeWithSelector(SmartWill.WillAlreadyExists.selector, owner));
+        vm.startPrank(owner);
+        will.createWill(5);
+    }
+
+    function test_CannotDepositIfNoWill() public {
+        vm.startPrank(owner);
+        vm.expectRevert(abi.encodeWithSelector(SmartWill.WillNotFound.selector, owner));
+        will.deposit{value: 1000}();
+    }
+
+    function test_CannotDepositZero() public {
+        vm.startPrank(owner);
+        vm.expectRevert(abi.encodeWithSelector(SmartWill.NoValueSent.selector));
+        will.deposit{value: 0}();
+    }
+
+    function test_CannotWithdrawIfNoWill() public {
+        vm.startPrank(owner);
+        vm.expectRevert(abi.encodeWithSelector(SmartWill.WillNotFound.selector, owner));
+        will.withdraw(100);
+    }
+
+    function test_CannotWithdrawMorethanUsableFunds() public {
+        vm.startPrank(owner);
+        will.createWill(10);
+        will.deposit{value: 100}();
+        vm.expectRevert(abi.encodeWithSelector(SmartWill.InsufficientFunds.selector, 200, 100));
+        vm.startPrank(owner);
+        will.withdraw(200);
+    }
+
+    function test_CannotAddBeneficiaryToNonExistentWill() public {
+        vm.startPrank(owner);
+        vm.expectRevert(abi.encodeWithSelector(SmartWill.WillNotFound.selector, owner));
+        will.addBeneficiary(beneficiaryOne, 100);
+    }
+
+    function test_CannotAddExistingBeneficiary() public {
+        vm.startPrank(owner);
+        will.createWill(10);
+        will.deposit{value: 1000}();
+        vm.startPrank(owner);
+        will.addBeneficiary(beneficiaryOne, 100);
+        vm.expectRevert(abi.encodeWithSelector(SmartWill.BeneficiaryExists.selector, beneficiaryOne));
+        will.addBeneficiary(beneficiaryOne, 100);
+    }
+
+    function test_CannotDesignateMoreThanUsableFunds() public {
+        vm.startPrank(owner);
+        will.createWill(10);
+        will.deposit{value: 499}();
+        vm.expectRevert(abi.encodeWithSelector(SmartWill.InsufficientFunds.selector, 500, 499));
+        vm.startPrank(owner);
+        will.addBeneficiary(beneficiaryOne, 500);
+    }
+
+    function test_CannotRemoveNonExistentBeneficiary() public {
+        vm.startPrank(owner);
+        will.createWill(10);
+        vm.expectRevert(abi.encodeWithSelector(SmartWill.BeneficiaryNotFound.selector, beneficiaryOne));
+        vm.startPrank(owner);
+        will.removeBeneficiary(beneficiaryOne);
+    }
+
+    function test_BeneficiaryCannotClaimBeforeTimeout() public {
+        uint256 current = block.timestamp;
+        vm.startPrank(owner);
+        will.createWill(5);
+        will.deposit{value: 1000}();
+        will.addBeneficiary(beneficiaryOne, 500);
+        vm.stopPrank();
+
+        vm.warp(current + 2 days);
+        vm.expectRevert(abi.encodeWithSelector(SmartWill.TimeoutNotExpired.selector, current + 5 days));
+        vm.prank(beneficiaryOne);
+        will.claimInheritance(owner);
+        vm.expectRevert(abi.encodeWithSelector(SmartWill.NothingToClaim.selector));
+        vm.prank(beneficiaryTwo);
+        will.claimInheritance(owner);
     }
 }
