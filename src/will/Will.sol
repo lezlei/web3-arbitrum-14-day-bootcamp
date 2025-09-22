@@ -39,7 +39,7 @@ contract SmartWill {
 
     // Functions
     // Creates a will
-    function createWill(uint _timeoutInDays) public {
+    function createWill(uint256 _timeoutInDays) public {
         if (wills[msg.sender].lastPing > 0) {
             revert WillAlreadyExists(msg.sender);
         }
@@ -178,7 +178,8 @@ contract SmartWill {
         wills[msg.sender].beneficiaries[_beneficiary] = 0;
         for (uint256 i = 0; i < wills[msg.sender].beneficiaryList.length; i++) {
             if (wills[msg.sender].beneficiaryList[i] == _beneficiary) {
-                wills[msg.sender].beneficiaryList[i] = wills[msg.sender].beneficiaryList[wills[msg.sender].beneficiaryList.length - 1];
+                wills[msg.sender].beneficiaryList[i] =
+                    wills[msg.sender].beneficiaryList[wills[msg.sender].beneficiaryList.length - 1];
                 wills[msg.sender].beneficiaryList.pop();
                 break;
             }
@@ -192,17 +193,15 @@ contract SmartWill {
      * @dev This is needed because the default public getter is not generated
      * for structs that contain mappings or dynamic arrays.
      */
-    function getWillSimpleDetails() public view returns (uint256 lastPing, uint256 timeout, uint256 usableFunds)
-    {
+    function getWillSimpleDetails() public view returns (uint256 lastPing, uint256 timeout, uint256 usableFunds) {
         Will storage userWill = wills[msg.sender];
         return (userWill.lastPing, userWill.timeout, userWill.usableFunds);
     }
-    
+
     /**
      * @notice A getter to return the amount for a specific beneficiary of a will.
      */
-    function getBeneficiaryAmount(address _beneficiary) public view returns (uint256)
-    {
+    function getBeneficiaryAmount(address _beneficiary) public view returns (uint256) {
         return wills[msg.sender].beneficiaries[_beneficiary];
     }
 }

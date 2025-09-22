@@ -19,19 +19,19 @@ contract WillTest is Test {
 
     // --- Happy Path Tests ---
     function test_CanCreateWill() public {
-        uint expectedTimeout = 5 days;
+        uint256 expectedTimeout = 5 days;
         vm.expectEmit(true, false, false, true);
         emit SmartWill.WillCreated(owner, expectedTimeout);
         vm.prank(owner);
         will.createWill(5);
         vm.prank(owner);
-        (uint256 lastPing, uint256 timeout, ) = will.getWillSimpleDetails();
+        (uint256 lastPing, uint256 timeout,) = will.getWillSimpleDetails();
         assertTrue(lastPing > 0, "lastPing should be set");
         assertEq(timeout, expectedTimeout, "timeout was not set correctly");
     }
 
     function test_CanDeposit() public {
-        uint amount = 100;
+        uint256 amount = 100;
         vm.prank(owner);
         will.createWill(5);
 
@@ -46,7 +46,7 @@ contract WillTest is Test {
     }
 
     function test_CanWithdraw() public {
-        uint amount = 100;
+        uint256 amount = 100;
         vm.prank(owner);
         will.createWill(5);
         vm.prank(owner);
@@ -72,7 +72,7 @@ contract WillTest is Test {
         emit SmartWill.Ping(owner);
         will.ping();
         vm.prank(owner);
-        (uint256 lastPing,, ) = will.getWillSimpleDetails();
+        (uint256 lastPing,,) = will.getWillSimpleDetails();
         assertEq(lastPing, block.timestamp, "ping failed");
     }
 
@@ -136,7 +136,7 @@ contract WillTest is Test {
         assertEq(usableFunds, 200, "funds not deducted properly");
         assertEq(inheritance, 0, "remove beneficiary failed");
     }
-    
+
     function test_CanGetWillDetails() public {
         vm.startPrank(owner);
         will.createWill(5);
@@ -150,7 +150,9 @@ contract WillTest is Test {
         benos[0] = beneficiaryOne;
         benos[1] = beneficiaryTwo;
         assertEq(_usable, 300, "get will details failed 1");
-        assertEq(keccak256(abi.encodePacked(_beneficiaries)), keccak256(abi.encodePacked(benos)), "get will details failed 2");
+        assertEq(
+            keccak256(abi.encodePacked(_beneficiaries)), keccak256(abi.encodePacked(benos)), "get will details failed 2"
+        );
     }
 
     function test_BeneficiaryCanClaimAfterTimeout() public {
@@ -178,7 +180,9 @@ contract WillTest is Test {
         will.claimInheritance(owner);
 
         // 6. Check that the beneficiary's ETH balance increased by the correct amount.
-        assertEq(beneficiaryOne.balance, beneficiaryBalanceBefore + inheritanceAmount, "Beneficiary did not receive funds");
+        assertEq(
+            beneficiaryOne.balance, beneficiaryBalanceBefore + inheritanceAmount, "Beneficiary did not receive funds"
+        );
 
         // 7. Check that the beneficiary's amount in the will is now zero to prevent re-claiming.
         uint256 beneficiaryAmountAfter = will.getBeneficiaryAmount(beneficiaryOne);
