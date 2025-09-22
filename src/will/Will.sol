@@ -3,14 +3,7 @@ pragma solidity ^0.8.26;
 
 contract SmartWill {
     // Variables
-    uint256 constant TIMEOUT = 365 days;
-
     mapping(address => Will) wills;
-
-    struct BeneficiaryInfo {
-        address benaddress;
-        uint256 amt;
-    }
 
     struct Will {
         uint256 lastPing; // The timestamp of the last "I'm alive" signal
@@ -32,18 +25,29 @@ contract SmartWill {
     error NoValueSent();
     error ZeroDuration();
     error UnviableAmount();
-    error DeleteBeneficiaryInstead();
+    error RemoveBeneficiaryInstead();
+
+    // --- Events ---
+    event WillCreated(address indexed owner, uint256 timeout);
+    event Deposit(address indexed owner, uint256 amount);
+    event Withdrawal(address indexed owner, uint256 amount);
+    event Ping(address indexed owner);
+    event BeneficiaryAdded(address indexed owner, address indexed beneficiary, uint256 amount);
+    event BeneficiaryUpdated(address indexed owner, address indexed beneficiary, uint256 newAmount);
+    event BeneficiaryRemoved(address indexed owner, address indexed beneficiary);
+    event InheritanceClaimed(address indexed owner, address indexed beneficiary);
 
     // Functions
     // Creates a will
-    function createWill() public {
+    function createWill(uint _timeoutInDays) public {
         if (wills[msg.sender].lastPing > 0) {
             revert WillAlreadyExists(msg.sender);
         }
 
         Will storage userWill = wills[msg.sender];
         userWill.lastPing = block.timestamp;
-        userWill.timeout = TIMEOUT;
+        userWill.timeout = _timeoutInDays * 1 days;
+        emit WillCreated(msg.sender, _timeoutInDays * 1 days);
     }
 
     // Allows beneficiaries to claim inheritance
@@ -54,12 +58,13 @@ contract SmartWill {
         if (wills[_owner].beneficiaries[msg.sender] == 0) {
             revert NothingToClaim();
         }
-        if (block.timestamp < wills[_owner].lastPing + TIMEOUT) {
-            revert TimeoutNotExpired(wills[_owner].lastPing + TIMEOUT);
+        if (block.timestamp < wills[_owner].lastPing + wills[_owner].timeout) {
+            revert TimeoutNotExpired(wills[_owner].lastPing + wills[_owner].timeout);
         }
         (bool success,) = msg.sender.call{value: wills[_owner].beneficiaries[msg.sender]}("");
         require(success, "ETH transfer failed");
         wills[_owner].beneficiaries[msg.sender] = 0;
+        emit InheritanceClaimed(_owner, msg.sender);
     }
 
     // Updates lastPing time to current time
@@ -68,21 +73,16 @@ contract SmartWill {
             revert WillNotFound(msg.sender);
         }
         wills[msg.sender].lastPing = block.timestamp;
+        emit Ping(msg.sender);
     }
 
     // Returns all the info of the user's will
-    function getWillDetails() public view returns (uint256 usable, BeneficiaryInfo[] memory beneficiaries) {
+    function getWillDetails() public view returns (uint256 _usable, address[] memory _beneficiaries) {
         if (wills[msg.sender].lastPing == 0) {
             revert WillNotFound(msg.sender);
         }
-        usable = wills[msg.sender].usableFunds;
-
-        beneficiaries = new BeneficiaryInfo[](wills[msg.sender].beneficiaryList.length);
-        for (uint256 i = 0; i < wills[msg.sender].beneficiaryList.length; i++) {
-            address beneficiaryAddress = wills[msg.sender].beneficiaryList[i];
-            uint256 beneficiaryAmount = wills[msg.sender].beneficiaries[beneficiaryAddress];
-            beneficiaries[i] = BeneficiaryInfo(beneficiaryAddress, beneficiaryAmount);
-        }
+        _usable = wills[msg.sender].usableFunds;
+        _beneficiaries = wills[msg.sender].beneficiaryList;
     }
 
     // Deposits funds into user's usable_Funds
@@ -96,6 +96,7 @@ contract SmartWill {
 
         wills[msg.sender].usableFunds += msg.value;
         wills[msg.sender].lastPing = block.timestamp;
+        emit Deposit(msg.sender, msg.value);
     }
 
     // Allows user to withdraw funds from usable_Funds
@@ -114,6 +115,7 @@ contract SmartWill {
         require(success, "ETH transfer failed");
         wills[msg.sender].usableFunds -= _amount;
         wills[msg.sender].lastPing = block.timestamp;
+        emit Withdrawal(msg.sender, _amount);
     }
 
     // Creates a beneficiary and designates them an amount of inheritance
@@ -135,6 +137,7 @@ contract SmartWill {
         wills[msg.sender].usableFunds -= _amount;
         wills[msg.sender].beneficiaryList.push(_beneficiary);
         wills[msg.sender].lastPing = block.timestamp;
+        emit BeneficiaryAdded(msg.sender, _beneficiary, _amount);
     }
 
     // Updates the amount of inheritance designated to a beneficiary
@@ -146,7 +149,7 @@ contract SmartWill {
             revert InsufficientFunds(_amount, wills[msg.sender].usableFunds);
         }
         if (_amount <= 0) {
-            revert DeleteBeneficiaryInstead();
+            revert RemoveBeneficiaryInstead();
         }
 
         // Update usable funds
@@ -159,10 +162,11 @@ contract SmartWill {
         // Update inheritance
         wills[msg.sender].beneficiaries[_beneficiary] = _amount;
         wills[msg.sender].lastPing = block.timestamp;
+        emit BeneficiaryUpdated(msg.sender, _beneficiary, _amount);
     }
 
-    // Deletes a beneficiary, sending their designated inheritance back to user's usable_Funds
-    function deleteBeneficiary(address _beneficiary) public {
+    // Removes a beneficiary, sending their designated inheritance back to user's usable_Funds
+    function removeBeneficiary(address _beneficiary) public {
         if (wills[msg.sender].lastPing == 0) {
             revert WillNotFound(msg.sender);
         }
@@ -174,12 +178,31 @@ contract SmartWill {
         wills[msg.sender].beneficiaries[_beneficiary] = 0;
         for (uint256 i = 0; i < wills[msg.sender].beneficiaryList.length; i++) {
             if (wills[msg.sender].beneficiaryList[i] == _beneficiary) {
-                wills[msg.sender].beneficiaryList[i] =
-                    wills[msg.sender].beneficiaryList[wills[msg.sender].beneficiaryList.length - 1];
+                wills[msg.sender].beneficiaryList[i] = wills[msg.sender].beneficiaryList[wills[msg.sender].beneficiaryList.length - 1];
                 wills[msg.sender].beneficiaryList.pop();
                 break;
             }
         }
         wills[msg.sender].lastPing = block.timestamp;
+        emit BeneficiaryRemoved(msg.sender, _beneficiary);
+    }
+
+    /**
+     * @notice A simple getter to return the core non-complex data of a will.
+     * @dev This is needed because the default public getter is not generated
+     * for structs that contain mappings or dynamic arrays.
+     */
+    function getWillSimpleDetails() public view returns (uint256 lastPing, uint256 timeout, uint256 usableFunds)
+    {
+        Will storage userWill = wills[msg.sender];
+        return (userWill.lastPing, userWill.timeout, userWill.usableFunds);
+    }
+    
+    /**
+     * @notice A getter to return the amount for a specific beneficiary of a will.
+     */
+    function getBeneficiaryAmount(address _beneficiary) public view returns (uint256)
+    {
+        return wills[msg.sender].beneficiaries[_beneficiary];
     }
 }
