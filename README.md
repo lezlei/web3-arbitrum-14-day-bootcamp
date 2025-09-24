@@ -10,7 +10,7 @@ Inspired by the upcoming TOKEN2049 event, I set a personal goal: to go from zero
 
 Drawing inspiration from a past internship at a law firm, where I witnessed firsthand the drawbacks of traditional wills and estate planning, such as expensive law fees and issues with executors of wills (especially when joint-executors are named who don't see eye to eye after the passing of the testator), I decided to build the V1 of a Smart Will that can be improved in the future with the help of off-chain tools such as Chainlink bots and Oracles.
 
-This project is the result of that high-intensity sprint, showcasing a rapid learning curve and a passion for building in the Web3 ecosystem. 
+This project is the result of that high-intensity sprint, showcasing a fast learning curve and a passion for building in the Web3 ecosystem. 
 
 ---
 
@@ -31,6 +31,8 @@ A decentralized, multi-user contract that allows anyone to lock a specific amoun
 ---
 
 ## Project 2: Smart Will (In Progress: Day 4-14)
+- **Contract Address:** `0x06E42DC0509a20DC40090262E1d3952906E5018d`
+- **[View on Arbican](https://sepolia.arbiscan.io/address/0x06e42dc0509a20dc40090262e1d3952906e5018d)**
 
 Building on the concepts from the Time-locked Safe, the Smart Will is a more advanced contract that acts as a decentralized "dead man's switch." It allows a user to designate a beneficiary who can claim their locked funds after a specified period of user inactivity.
 

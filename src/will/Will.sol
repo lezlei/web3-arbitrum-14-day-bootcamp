@@ -38,7 +38,7 @@ contract SmartWill {
     event InheritanceClaimed(address indexed owner, address indexed beneficiary);
 
     // Functions
-    // Creates a will
+    // @notice Creates a will
     function createWill(uint256 _timeoutInDays) public {
         if (wills[msg.sender].lastPing > 0) {
             revert WillAlreadyExists(msg.sender);
@@ -50,7 +50,7 @@ contract SmartWill {
         emit WillCreated(msg.sender, _timeoutInDays * 1 days);
     }
 
-    // Allows beneficiaries to claim inheritance
+    // @notice Allows beneficiaries to claim inheritance
     function claimInheritance(address _owner) public {
         if (wills[_owner].lastPing == 0) {
             revert WillNotFound(_owner);
@@ -61,13 +61,15 @@ contract SmartWill {
         if (block.timestamp < wills[_owner].lastPing + wills[_owner].timeout) {
             revert TimeoutNotExpired(wills[_owner].lastPing + wills[_owner].timeout);
         }
-        (bool success,) = msg.sender.call{value: wills[_owner].beneficiaries[msg.sender]}("");
-        require(success, "ETH transfer failed");
+
+        uint256 inheritanceAmount = wills[_owner].beneficiaries[msg.sender];
         wills[_owner].beneficiaries[msg.sender] = 0;
+        (bool success,) = msg.sender.call{value: inheritanceAmount}("");
+        require(success, "ETH transfer failed");
         emit InheritanceClaimed(_owner, msg.sender);
     }
 
-    // Updates lastPing time to current time
+    // @notice Updates lastPing time to current time
     function ping() public {
         if (wills[msg.sender].lastPing == 0) {
             revert WillNotFound(msg.sender);
@@ -76,7 +78,7 @@ contract SmartWill {
         emit Ping(msg.sender);
     }
 
-    // Returns all the info of the user's will
+    // @notice Returns all the info of the user's will
     function getWillDetails() public view returns (uint256 _usable, address[] memory _beneficiaries) {
         if (wills[msg.sender].lastPing == 0) {
             revert WillNotFound(msg.sender);
@@ -85,7 +87,7 @@ contract SmartWill {
         _beneficiaries = wills[msg.sender].beneficiaryList;
     }
 
-    // Deposits funds into user's usable_Funds
+    // @notice Deposits funds into user's usable_Funds
     function deposit() public payable {
         if (msg.value == 0) {
             revert NoValueSent();
@@ -99,7 +101,7 @@ contract SmartWill {
         emit Deposit(msg.sender, msg.value);
     }
 
-    // Allows user to withdraw funds from usable_Funds
+    // @notice Allows user to withdraw funds from usable_Funds
     function withdraw(uint256 _amount) public {
         if (_amount <= 0) {
             revert NoValueSent();
@@ -111,14 +113,14 @@ contract SmartWill {
             revert InsufficientFunds(_amount, wills[msg.sender].usableFunds);
         }
 
-        (bool success,) = msg.sender.call{value: _amount}("");
-        require(success, "ETH transfer failed");
         wills[msg.sender].usableFunds -= _amount;
         wills[msg.sender].lastPing = block.timestamp;
+        (bool success,) = msg.sender.call{value: _amount}("");
+        require(success, "ETH transfer failed");
         emit Withdrawal(msg.sender, _amount);
     }
 
-    // Creates a beneficiary and designates them an amount of inheritance
+    // @notice Creates a beneficiary and designates them an amount of inheritance
     function addBeneficiary(address _beneficiary, uint256 _amount) public {
         if (wills[msg.sender].lastPing == 0) {
             revert WillNotFound(msg.sender);
@@ -129,7 +131,7 @@ contract SmartWill {
         if (_amount > wills[msg.sender].usableFunds) {
             revert InsufficientFunds(_amount, wills[msg.sender].usableFunds);
         }
-        if (_amount < 0) {
+        if (_amount == 0) {
             revert UnviableAmount();
         }
 
@@ -140,7 +142,7 @@ contract SmartWill {
         emit BeneficiaryAdded(msg.sender, _beneficiary, _amount);
     }
 
-    // Updates the amount of inheritance designated to a beneficiary
+    // @notice Updates the amount of inheritance designated to a beneficiary
     function updateBeneficiary(address _beneficiary, uint256 _amount) public {
         if (wills[msg.sender].lastPing == 0) {
             revert WillNotFound(msg.sender);
@@ -152,20 +154,21 @@ contract SmartWill {
             revert RemoveBeneficiaryInstead();
         }
 
-        // Update usable funds
+        // @notice Update usable funds
         if (_amount > wills[msg.sender].beneficiaries[_beneficiary]) {
             wills[msg.sender].usableFunds -= (_amount - wills[msg.sender].beneficiaries[_beneficiary]);
         }
         if (_amount < wills[msg.sender].beneficiaries[_beneficiary]) {
             wills[msg.sender].usableFunds += (wills[msg.sender].beneficiaries[_beneficiary] - _amount);
         }
-        // Update inheritance
+        // @notice Update inheritance
         wills[msg.sender].beneficiaries[_beneficiary] = _amount;
         wills[msg.sender].lastPing = block.timestamp;
         emit BeneficiaryUpdated(msg.sender, _beneficiary, _amount);
     }
 
-    // Removes a beneficiary, sending their designated inheritance back to user's usable_Funds
+    // @notice Removes a beneficiary, sending their designated inheritance back to user's usable_Funds
+
     function removeBeneficiary(address _beneficiary) public {
         if (wills[msg.sender].lastPing == 0) {
             revert WillNotFound(msg.sender);

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
-// Correctly import both the contract and the struct
 import {SmartWill} from "../../src/will/Will.sol";
 
 contract WillTest is Test {
@@ -275,5 +274,59 @@ contract WillTest is Test {
         vm.expectRevert(abi.encodeWithSelector(SmartWill.NothingToClaim.selector));
         vm.prank(beneficiaryTwo);
         will.claimInheritance(owner);
+    }
+}
+
+// --- Invariant Testing ---
+contract Handler is Test {
+    SmartWill will;
+    // This is our simple, internal ledger to track the state
+    uint256 public totalUsableFunds;
+
+    constructor(SmartWill _will) {
+        will = _will;
+    }
+
+    // --- Functions the fuzzer can call randomly ---
+
+    function createWill(uint256 timeout) public {
+        (uint256 lastPing,,) = will.getWillSimpleDetails();
+        if (lastPing == 0) {
+            vm.prank(msg.sender);
+            will.createWill(timeout);
+        }
+    }
+
+    function deposit(uint256 amount) public {
+        // Only deposit if a will exists to avoid reverts
+        (uint256 lastPing,,) = will.getWillSimpleDetails();
+        if (lastPing > 0) {
+            // Update our internal ledger
+            totalUsableFunds += amount;
+            vm.prank(msg.sender);
+            will.deposit{value: amount}();
+        }
+    }
+
+    function withdraw(uint256 amount) public {
+        // Only withdraw if funds are available to avoid reverts
+        (,, uint256 usableFunds) = will.getWillSimpleDetails();
+        uint256 userUsableFunds = usableFunds;
+        if (amount <= userUsableFunds) {
+            // Update our internal ledger
+            totalUsableFunds -= amount;
+            vm.prank(msg.sender);
+            will.withdraw(amount);
+        }
+    }
+
+    // --- The Invariant ---
+    // This is the core rule that the fuzzer will try to break.
+    function invariant_totalBalanceMatchesTotalUsableFunds() public view {
+        assertEq(
+            address(will).balance,
+            totalUsableFunds,
+            "Invariant broken: Contract balance does not match total usable funds"
+        );
     }
 }
