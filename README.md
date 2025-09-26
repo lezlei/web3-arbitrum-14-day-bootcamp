@@ -1,8 +1,8 @@
-# Web3 Arbitrum 14-Day Bootcamp: Time-Locked Safe & Smart Will
+# Web3 Arbitrum 14-Day Bootcamp: Time-Locked Safe, Smart Will, and Account Abstraction with ERC-4337
 
 ![Build Status](https://github.com/lezlei/web3-arbitrum-14-day-bootcamp/actions/workflows/test.yml/badge.svg)
 
-A repository documenting a 14-day personal challenge to learn Web3 development from scratch and deploy two dApps on the Arbitrum testnet.
+A repository documenting a 14-day personal challenge to learn Web3 development from scratch and deploy 3 dApps on the Arbitrum testnet.
 
 ## The Challenge
 
@@ -10,7 +10,7 @@ Inspired by the upcoming TOKEN2049 event, I set a personal goal: to go from zero
 
 Drawing inspiration from a past internship at a law firm, where I witnessed firsthand the drawbacks of traditional wills and estate planning, such as expensive law fees and issues with executors of wills (especially when joint-executors are named who don't see eye to eye after the passing of the testator), I decided to build the V1 of a Smart Will that can be improved in the future with the help of off-chain tools such as Chainlink bots and Oracles.
 
-This project is the result of that high-intensity sprint, showcasing a fast learning curve and a passion for building in the Web3 ecosystem. 
+After completing V1 of the Smart Will in on Day 6, I learned about Account Abstraction (AA) and ERC-4337 and how it's a game-changer for UX, so I decided to build an AA-implemented Smart Will
 
 ---
 
