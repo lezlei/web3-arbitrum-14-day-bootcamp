@@ -2,7 +2,9 @@
 
 ![Build Status](https://github.com/lezlei/web3-arbitrum-14-day-bootcamp/actions/workflows/test.yml/badge.svg)
 
-A repository documenting a 14-day personal challenge to learn Web3 development from scratch and deploy 3 dApps on the Arbitrum testnet, 3rd AA-implemented dApp repo is: (https://github.com/lezlei/aa-smart-will)
+ERC-4337 AA-implemented Smart Will repo is at: (https://github.com/lezlei/aa-smart-will)
+
+A repository documenting a 14-day personal challenge to learn Web3 development from scratch and write 3 smart contracts, with 2 deployed on Arbitrum Testnet.
 
 ## The Challenge
 
