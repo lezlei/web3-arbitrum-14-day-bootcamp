@@ -14,7 +14,7 @@ After completing V1 of the Smart Will in on Day 6, I learned about Account Abstr
 
 ---
 
-## Project 1: Time-Locked Safe (Completed: Day 1-3)
+## Project 1: Time-Locked Safe (Completed: Day 1-3) src/safe/TimeLockedSafe.sol
 
 A decentralized, multi-user contract that allows anyone to lock a specific amount of ETH for a self-defined period. The funds can only be withdrawn by the original depositor after their lock time has expired.
 
@@ -30,7 +30,7 @@ A decentralized, multi-user contract that allows anyone to lock a specific amoun
 
 ---
 
-## Project 2: Smart Will (In Progress: Day 4-14)
+## Project 2: Smart Will (In Progress: Day 4-14) src/will/Will.sol
 - **Contract Address:** `0x06E42DC0509a20DC40090262E1d3952906E5018d`
 - **[View on Arbican](https://sepolia.arbiscan.io/address/0x06e42dc0509a20dc40090262e1d3952906e5018d)**
 
